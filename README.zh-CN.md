@@ -118,6 +118,7 @@
 
 ## 📦 仓库结构
 
+```text
 engineering-assets
 │
 ├─ README.md            # 项目说明（英文）
@@ -178,6 +179,7 @@ engineering-assets
    ├─ init-project.sh   # 根据模板初始化新项目
    ├─ render-template.sh# 渲染模板变量
    └─ validate.sh       # 校验模板结构
+```
 
 ---
 
