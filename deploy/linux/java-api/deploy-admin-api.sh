@@ -4,22 +4,35 @@
 set -euo pipefail
 umask 022
 
-### ======== 可按正式站实际修改的变量 ======== ###
-DEPLOY_ROOT="/opt/ydj-api"                           # 正式站根目录
-PORT=8183                                            # 应用监听端口（用于端口释放等待）
-PROFILE="prod"                                       # Spring profile
-SERVICE_NAME="ydj-${PROFILE}.service"                # systemd 服务名
-HEALTH_URL="http://127.0.0.1:8183/edo/actuator/health"  # 健康检查地址
-JAVA_BIN="/data/service/easy_bills_java/jdk-21.0.1/bin/java" # 可选：用于自检
-### =========================================== ###
+### ======== Site-specific variables (edit for each project) ======== ###
+APP_NAME="my-app"                     # 应用名（用于 jar/service 命名）
+PROFILE="prod"                        # Spring profile: dev/test/prod
+DEPLOY_ROOT="/opt/${APP_NAME}"        # 部署根目录（建议与 APP_NAME 对齐）
+PORT=8183                             # 应用端口（用于等待端口释放）
 
-DATE="$(date +%Y%m%d%H%M)"
+# health check
+HEALTH_HOST="127.0.0.1"
+HEALTH_PATH="/actuator/health"        # 默认 Spring Boot actuator
+HEALTH_URL="http://${HEALTH_HOST}:${PORT}${HEALTH_PATH}"
+
+# systemd service (推荐：appname-profile.service)
+SERVICE_NAME="${APP_NAME}-${PROFILE}.service"
+
+# optional: java binary for self-check (留空则不自检)
+JAVA_BIN=""                           # e.g. /usr/lib/jvm/java-21/bin/java
+### =============================================================== ###
+
+DATE="$(date +%Y%m%d%H%M%S)"
 RELEASE_DIR="${DEPLOY_ROOT}/releases/${DATE}"
-TMP_JAR="${DEPLOY_ROOT}/tmp/ydj-${PROFILE}.jar"
-FINAL_JAR="${RELEASE_DIR}/ydj-${PROFILE}.jar"
+
+# jar naming (统一规则：APP_NAME-PROFILE.jar)
+TMP_JAR="${DEPLOY_ROOT}/tmp/${APP_NAME}-${PROFILE}.jar"
+FINAL_JAR="${RELEASE_DIR}/${APP_NAME}-${PROFILE}.jar"
+
 SOFTLINK="${DEPLOY_ROOT}/current"
 CFG_DIR="${RELEASE_DIR}/config"
 SHARED_CFG_DIR="${DEPLOY_ROOT}/shared-config"
+
 LOCK_FILE="${DEPLOY_ROOT}/.deploy.lock"
 LOG_FILE="${DEPLOY_ROOT}/deploy.log"
 
