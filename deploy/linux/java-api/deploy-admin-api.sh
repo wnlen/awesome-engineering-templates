@@ -9,6 +9,8 @@ APP_NAME="my-app"                     # 应用名（用于 jar/service 命名）
 PROFILE="prod"                        # Spring profile: dev/test/prod
 DEPLOY_ROOT="/opt/${APP_NAME}"        # 部署根目录（建议与 APP_NAME 对齐）
 PORT=8183                             # 应用端口（用于等待端口释放）
+ASSETS_ROOT=""                 # optional: shared assets dir (img/certs/template)
+REQUIRE_HEALTH_HTTP_200="1"    # 1=must 200, 0=skip health check (for non-http services)
 
 # health check
 HEALTH_HOST="127.0.0.1"
@@ -22,7 +24,8 @@ SERVICE_NAME="${APP_NAME}-${PROFILE}.service"
 JAVA_BIN=""                           # e.g. /usr/lib/jvm/java-21/bin/java
 ### =============================================================== ###
 
-DATE="$(date +%Y%m%d%H%M%S)"
+DATE="$(date +%Y%m%d%H%M%S)"                 # 14位时间戳
+RELEASE_TS_REGEX='^[0-9]{12}([0-9]{2})?$'    # 版本目录匹配（给 rollback 用）
 RELEASE_DIR="${DEPLOY_ROOT}/releases/${DATE}"
 
 # jar naming (统一规则：APP_NAME-PROFILE.jar)
@@ -45,11 +48,12 @@ if ! flock -n 9; then
 fi
 
 # --- 依赖校验（缺哪个就直接退出） ---
-for bin in curl unzip ss systemctl awk sed; do
+for bin in curl unzip ss systemctl journalctl awk sed grep readlink flock; do
   command -v "$bin" >/dev/null || { echo "[error] missing required tool: $bin" >&2; exit 1; }
 done
-[ -x "${JAVA_BIN}" ] || echo "[warn] ${JAVA_BIN} not found or not executable (ignored)."
-
+if [[ -n "${JAVA_BIN}" ]]; then
+  [[ -x "${JAVA_BIN}" ]] || echo "[warn] JAVA_BIN not executable: ${JAVA_BIN} (ignored)."
+fi
 # --- 记录旧版本以便回滚 ---
 OLD_LINK=""
 if [ -L "${SOFTLINK}" ]; then
@@ -133,10 +137,12 @@ fi
 # === 5) 切换 current 软链到新版本 ===
 ln -sfn "${RELEASE_DIR}" "${SOFTLINK}"
 
-# === 6) 自动挂载资源目录软链（如静态资源等，按需调整/保留） ===
-[ ! -e "${SOFTLINK}/img" ] && ln -s /data/service/easy_bills_java/img "${SOFTLINK}/img"
-# [ ! -e "${SOFTLINK}/template" ] && ln -s /data/service/easy_bills_java/template "${SOFTLINK}/template"
-[ ! -e "${SOFTLINK}/certs" ] && ln -s /data/service/easy_bills_java/certs "${SOFTLINK}/certs"
+# === 6) Optional: mount shared assets (static files/certs/templates) ===
+if [[ -n "${ASSETS_ROOT}" ]]; then
+  [[ ! -e "${SOFTLINK}/img"   && -d "${ASSETS_ROOT}/img"   ]] && ln -s "${ASSETS_ROOT}/img"   "${SOFTLINK}/img"
+  [[ ! -e "${SOFTLINK}/certs" && -d "${ASSETS_ROOT}/certs" ]] && ln -s "${ASSETS_ROOT}/certs" "${SOFTLINK}/certs"
+  [[ ! -e "${SOFTLINK}/template" && -d "${ASSETS_ROOT}/template" ]] && ln -s "${ASSETS_ROOT}/template" "${SOFTLINK}/template"
+fi
 
 # === 7) 让 systemd 读取最新 unit（幂等） ===
 systemctl daemon-reload
@@ -148,7 +154,7 @@ set -e
 
 # === 9) 等端口释放（兼容 IPv4/IPv6） ===
 for i in {1..30}; do
-  if ss -ltn | awk '{print $4}' | grep -Eq "(^|:|\\[::\\]:)${PORT}$"; then
+  if ss -ltn | awk '{print $4}' | grep -Eq "(:|\\])${PORT}$"; then
     sleep 1
   else
     break
@@ -167,21 +173,22 @@ if ! start_once; then
 fi
 
 # === 11) 健康检查（200 视为成功） ===
-ok=0
-for i in {1..60}; do
-  code="$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "${HEALTH_URL}" || true)"
-  if [ "${code}" = "200" ]; then
-    ok=1
-    break
+if [[ "${REQUIRE_HEALTH_HTTP_200}" == "1" ]]; then
+  ok=0
+  for i in {1..60}; do
+    code="$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "${HEALTH_URL}" || true)"
+    if [ "${code}" = "200" ]; then
+      ok=1
+      break
+    fi
+    sleep 1
+  done
+
+  if [ "${ok}" -ne 1 ]; then
+    echo "[error] service not healthy after start." >&2
+    systemctl status "${SERVICE_NAME}" || true
+    journalctl -u "${SERVICE_NAME}" -n 200 --no-pager || true
+    exit 1
   fi
-  sleep 1
-done
-
-if [ "${ok}" -ne 1 ]; then
-  echo "[error] service not healthy after start." >&2
-  systemctl status "${SERVICE_NAME}" || true
-  journalctl -u "${SERVICE_NAME}" -n 200 --no-pager || true
-  exit 1
 fi
-
 echo "Production service deployed and started OK: ${DATE}" | tee -a "${LOG_FILE}"
