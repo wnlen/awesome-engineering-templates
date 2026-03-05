@@ -118,14 +118,66 @@
 
 ## 📦 仓库结构
 
-
-templates/ 可复用工程模板
-deploy/ 部署脚本与部署结构
-devops/ CI/CD、Nginx、监控
-snippets/ 常用代码片段
-docs/ 工程文档与实践指南
-tools/ 工具脚本
-
+engineering-assets
+│
+├─ README.md            # 项目说明（英文）
+├─ README.zh-CN.md      # 项目说明（中文）
+├─ LICENSE              # 开源协议
+├─ .gitignore           # Git 忽略规则
+├─ .editorconfig        # 编辑器统一格式配置
+├─ CHANGELOG.md         # 版本变更记录
+├─ CONTRIBUTING.md      # 贡献指南
+├─ CODEOWNERS           # 仓库维护者 / 审核人
+│
+├─ docs                 # 项目文档
+│  ├─ 00-quickstart.md            # 快速开始
+│  ├─ 01-how-to-use-templates.md  # 模板使用说明
+│  ├─ 02-deployment-playbook.md   # 部署操作指南
+│  └─ 03-style-guide.md           # 工程规范 / 代码风格
+│
+├─ templates            # 可复用的项目模板
+│  ├─ backend           # 后端项目模板
+│  │  ├─ springboot-api            # Spring Boot API 项目模板
+│  │  └─ springboot-multi-module   # Spring Boot 多模块项目结构
+│  │
+│  ├─ frontend          # 前端项目模板
+│  │  ├─ vue3-vite-admin           # Vue3 + Vite 后台管理模板
+│  │  └─ uniapp                    # UniApp 应用模板
+│  │
+│  └─ database          # 数据库相关模板
+│     ├─ mysql                     # MySQL 表结构示例
+│     └─ migration                 # 数据库迁移脚本模板
+│
+├─ deploy               # 部署脚本
+│  ├─ linux             # Linux 原生部署
+│  │  ├─ java-api                 # Java API 部署脚本
+│  │  └─ vue-admin                # Vue Admin 前端部署脚本
+│  │
+│  └─ docker            # Docker 部署示例
+│     ├─ java                     # Java Dockerfile 示例
+│     └─ compose                  # Docker Compose 示例
+│
+├─ devops               # DevOps 相关配置
+│  ├─ nginx             # Nginx 反向代理配置
+│  │
+│  ├─ ci                # CI / CD 流水线配置
+│  │  ├─ github-actions           # GitHub Actions 模板
+│  │  └─ jenkins                  # Jenkins Pipeline 模板
+│  │
+│  └─ monitoring        # 监控相关脚本
+│     ├─ healthcheck             # 服务健康检查脚本
+│     └─ logrotate               # 日志轮转配置
+│
+├─ snippets             # 常用代码片段
+│  ├─ maven             # Maven 配置片段
+│  ├─ spring            # Spring Boot 配置示例
+│  ├─ bash              # Shell 脚本片段
+│  └─ vue               # Vue 前端代码片段
+│
+└─ tools                # 模板辅助工具
+   ├─ init-project.sh   # 根据模板初始化新项目
+   ├─ render-template.sh# 渲染模板变量
+   └─ validate.sh       # 校验模板结构
 
 ---
 
