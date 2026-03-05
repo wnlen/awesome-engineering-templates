@@ -56,6 +56,7 @@ The goal is to reduce the cost of starting new projects by reusing **battle-test
 
 # Repository Structure
 
+```text
 engineering-assets
 │
 ├─ README.md            # Project overview and usage guide
@@ -115,6 +116,7 @@ engineering-assets
    ├─ init-project.sh   # Initialize a project from templates
    ├─ render-template.sh# Render template variables
    └─ validate.sh       # Validate template structure
+```
 
 ---
 
