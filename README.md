@@ -198,36 +198,48 @@ Examples:
 
 ---
 
-# Quick Start
+## Quick Start
 
 Example: start a new backend service using a template.
 
-```
-# copy backend template
+### 1. Copy backend template
 
+```bash
 cp -r templates/backend/springboot-api my-api
+```
 
-# add deploy scripts
+### 2. Add deploy scripts
 
+```bash
 cp -r deploy/linux/java-api my-api/scripts
 ```
+### 3. Follow the deployment guide
+See the deployment playbook:
 
-Then follow the deployment playbook:
-
+```bash
 docs/02-deployment-playbook.md
-Documentation
+```
+
+## Documentation
 
 Engineering guides and playbooks are located in:
 
 docs/
 
+```
 Recommended reading order:
 
-quickstart
+1. **Quick Start**  
+   `docs/00-quickstart.md`
 
-project structure
+2. **Project Structure**  
+   `docs/01-how-to-use-templates.md`
 
-deployment playbook
+3. **Deployment Playbook**  
+   `docs/02-deployment-playbook.md`
+```
+
+
 
 ## Related Repository
 
