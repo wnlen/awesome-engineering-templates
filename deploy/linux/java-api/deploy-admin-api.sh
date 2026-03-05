@@ -39,6 +39,14 @@ SHARED_CFG_DIR="${DEPLOY_ROOT}/shared-config"
 LOCK_FILE="${DEPLOY_ROOT}/.deploy.lock"
 LOG_FILE="${DEPLOY_ROOT}/deploy.log"
 
+# --- 依赖校验（缺哪个就直接退出） ---
+for bin in curl unzip ss systemctl journalctl awk sed grep readlink flock; do
+  command -v "$bin" >/dev/null || { echo "[error] missing required tool: $bin" >&2; exit 1; }
+done
+if [[ -n "${JAVA_BIN}" ]]; then
+  [[ -x "${JAVA_BIN}" ]] || echo "[warn] JAVA_BIN not executable: ${JAVA_BIN} (ignored)."
+fi
+
 # --- 并发互斥 ---
 mkdir -p "${DEPLOY_ROOT}"
 exec 9>"${LOCK_FILE}"
@@ -47,13 +55,6 @@ if ! flock -n 9; then
   exit 1
 fi
 
-# --- 依赖校验（缺哪个就直接退出） ---
-for bin in curl unzip ss systemctl journalctl awk sed grep readlink flock; do
-  command -v "$bin" >/dev/null || { echo "[error] missing required tool: $bin" >&2; exit 1; }
-done
-if [[ -n "${JAVA_BIN}" ]]; then
-  [[ -x "${JAVA_BIN}" ]] || echo "[warn] JAVA_BIN not executable: ${JAVA_BIN} (ignored)."
-fi
 # --- 记录旧版本以便回滚 ---
 OLD_LINK=""
 if [ -L "${SOFTLINK}" ]; then
@@ -63,7 +64,9 @@ rollback() {
   echo "[warn] deploy failed, rollback..." >&2
   if [ -n "${OLD_LINK}" ]; then
     ln -sfn "${OLD_LINK}" "${SOFTLINK}"
-    echo "[warn] rolled back to: ${OLD_LINK}" >&2
+    systemctl daemon-reload || true
+    systemctl start "${SERVICE_NAME}" || true
+    echo "[warn] rolled back to: ${OLD_LINK} and restarted service: ${SERVICE_NAME}" >&2
   fi
 }
 trap 'rollback' ERR
