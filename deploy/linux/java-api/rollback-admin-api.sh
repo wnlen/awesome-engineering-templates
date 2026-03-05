@@ -12,6 +12,8 @@ PORT=8183                           # used by health check URL
 HEALTH_HOST="127.0.0.1"
 HEALTH_PATH="/actuator/health"      # change if you use a prefix (e.g. /edo/actuator/health)
 HEALTH_URL="http://${HEALTH_HOST}:${PORT}${HEALTH_PATH}"
+REQUIRE_HEALTH_HTTP_200="1"         # 1=must be HTTP 200, 0=skip health check (for non-http services)
+HEALTH_TIMEOUT_SEC=60               # health check timeout seconds
 
 # systemd
 SERVICE_NAME="${APP_NAME}-${PROFILE}.service"
@@ -31,8 +33,13 @@ RELEASES_DIR="${DEPLOY_ROOT}/releases"
 SOFTLINK="${DEPLOY_ROOT}/current"
 
 # ===== helpers =====
-log()    { echo "[$(date +'%F %T')] [rollback] $*" | tee -a "$LOG_FILE" ; }
-die()    { echo "[$(date +'%F %T')] [rollback][error] $*" | tee -a "$LOG_FILE" >&2; exit 1; }
+log() { echo "[$(date +'%F %T')] [rollback] $*" | tee -a "$LOG_FILE"; }
+die() { echo "[$(date +'%F %T')] [rollback][error] $*" | tee -a "$LOG_FILE" >&2; exit 1; }
+
+# ===== required tools =====
+for bin in flock curl readlink systemctl find grep sort; do
+  command -v "$bin" >/dev/null 2>&1 || die "missing required tool: $bin"
+done
 
 # ===== lock =====
 mkdir -p "$DEPLOY_ROOT"
@@ -46,16 +53,19 @@ TARGET="${1:-1}"  # N steps (default 1) or release timestamp dir name
 CURRENT_PATH="$(readlink -f "$SOFTLINK")"
 [[ -d "$CURRENT_PATH" ]] || die "current target not a dir: $CURRENT_PATH"
 
-# ===== list versions =====
+# ===== list versions (filter dirs that actually contain jar) =====
 [[ -d "$RELEASES_DIR" ]] || die "releases dir not found: $RELEASES_DIR"
 
 mapfile -t VERSIONS < <(
   find "$RELEASES_DIR" -maxdepth 1 -mindepth 1 -type d -printf "%f\n" \
     | grep -E "$RELEASE_TS_REGEX" \
-    | sort
+    | sort \
+    | while read -r v; do
+        [[ -f "$RELEASES_DIR/$v/$JAR_NAME" ]] && echo "$v"
+      done
 )
 
-[[ ${#VERSIONS[@]} -gt 0 ]] || die "no releases found under $RELEASES_DIR"
+[[ ${#VERSIONS[@]} -gt 0 ]] || die "no valid releases found under $RELEASES_DIR (missing $JAR_NAME?)"
 
 # current index
 CUR_IDX=-1
@@ -83,6 +93,7 @@ log "current: $CURRENT_PATH"
 log "target : $PREV_PATH"
 log "service: $SERVICE_NAME"
 log "health : $HEALTH_URL"
+log "jar    : $JAR_NAME"
 
 # ===== stop + switch =====
 systemctl stop "$SERVICE_NAME" || true
@@ -91,23 +102,28 @@ systemctl reset-failed "$SERVICE_NAME" || true
 ln -sfn "$PREV_PATH" "$SOFTLINK"
 readlink -f "$SOFTLINK" | tee -a "$LOG_FILE"
 
+# Keep daemon-reload as a conservative choice (safe even if unit file changed)
 systemctl daemon-reload
 systemctl start "$SERVICE_NAME"
 
-# ===== health check (60s) =====
-ok=0
-for i in {1..60}; do
-  code="$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "$HEALTH_URL" || true)"
-  if [[ "$code" == "200" ]]; then ok=1; break; fi
-  sleep 1
-done
+# ===== health check =====
+if [[ "$REQUIRE_HEALTH_HTTP_200" == "1" ]]; then
+  ok=0
+  for ((i=1; i<=HEALTH_TIMEOUT_SEC; i++)); do
+    code="$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "$HEALTH_URL" || true)"
+    if [[ "$code" == "200" ]]; then ok=1; break; fi
+    sleep 1
+  done
 
-if [[ $ok -ne 1 ]]; then
-  log "health check failed, restoring original: $CURRENT_PATH"
-  ln -sfn "$CURRENT_PATH" "$SOFTLINK"
-  systemctl daemon-reload
-  systemctl start "$SERVICE_NAME" || true
-  die "rollback to $PREV_VER failed (health not OK). restored to original."
+  if [[ $ok -ne 1 ]]; then
+    log "health check failed, restoring original: $CURRENT_PATH"
+    ln -sfn "$CURRENT_PATH" "$SOFTLINK"
+    systemctl daemon-reload
+    systemctl start "$SERVICE_NAME" || true
+    die "rollback failed (health not OK) for target=$PREV_PATH. restored to original=$CURRENT_PATH."
+  fi
+else
+  log "health check skipped (REQUIRE_HEALTH_HTTP_200=0)"
 fi
 
 log "rolled back successfully to $PREV_VER"
