@@ -187,12 +187,15 @@ engineering-assets
 
 示例：使用模板创建一个新的后端服务。
 
-```bash
+```
 # 复制后端模板
+
 cp -r templates/backend/springboot-api my-api
 
 # 添加部署脚本
+
 cp -r deploy/linux/java-api my-api/scripts
+```
 
 然后按照部署指南继续：
 
@@ -203,7 +206,7 @@ docs/02-deployment-playbook.md
 
 👉 https://github.com/wnlen/project-starters
 
-项目理念
+## 项目理念
 
 本仓库遵循一个简单的工程原则：
 
@@ -211,7 +214,7 @@ docs/02-deployment-playbook.md
 复用基础设施
 专注于真正的业务功能
 
-贡献
+## 贡献
 
 欢迎贡献。
 
@@ -225,6 +228,6 @@ docs/02-deployment-playbook.md
 
 分享生产环境脚本
 
-License
+## License
 
 MIT
