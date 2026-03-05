@@ -202,12 +202,15 @@ Examples:
 
 Example: start a new backend service using a template.
 
-```bash
+```
 # copy backend template
+
 cp -r templates/backend/springboot-api my-api
 
 # add deploy scripts
+
 cp -r deploy/linux/java-api my-api/scripts
+```
 
 Then follow the deployment playbook:
 
@@ -226,36 +229,38 @@ project structure
 
 deployment playbook
 
-Related Repository
+## Related Repository
 
-Looking for ready-to-run project starters?
+Looking for **ready-to-run project starters**?
 
-See:
+👉 See:  
+https://github.com/yourname/project-starters
 
-https://github.com/wnlen/project-starters
+---
 
-Philosophy
+## Philosophy
 
 This repository follows a simple engineering principle:
 
-Automate repetition
-Reuse infrastructure
-Focus on building real features
+> **Automate repetition.  
+Reuse infrastructure.  
+Focus on building real features.**
 
-Contributing
+---
+
+## Contributing
 
 Contributions are welcome.
 
-You can help by:
+You can contribute by:
 
-improving templates
+- improving templates
+- adding new infrastructure patterns
+- fixing documentation
+- sharing production-tested scripts
 
-adding infrastructure patterns
+---
 
-fixing documentation
-
-sharing production scripts
-
-License
+## License
 
 MIT
