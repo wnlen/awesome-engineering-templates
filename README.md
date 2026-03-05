@@ -56,14 +56,65 @@ The goal is to reduce the cost of starting new projects by reusing **battle-test
 
 # Repository Structure
 
-
-templates/ reusable project templates
-deploy/ deployment scripts
-devops/ CI/CD, nginx, monitoring
-snippets/ reusable code snippets
-docs/ engineering playbooks
-tools/ helper scripts
-
+engineering-assets
+│
+├─ README.md            # Project overview and usage guide
+├─ LICENSE              # License information (MIT recommended)
+├─ .gitignore           # Git ignore rules
+├─ .editorconfig        # Editor formatting rules
+├─ CHANGELOG.md         # Version history
+├─ CONTRIBUTING.md      # Contribution guidelines
+├─ CODEOWNERS           # Maintainers / reviewers
+│
+├─ docs                 # Documentation
+│  ├─ 00-quickstart.md            # Quick start guide
+│  ├─ 01-how-to-use-templates.md  # How to use templates
+│  ├─ 02-deployment-playbook.md   # Deployment instructions
+│  └─ 03-style-guide.md           # Coding / project style guide
+│
+├─ templates            # Reusable project templates
+│  ├─ backend           # Backend project templates
+│  │  ├─ springboot-api            # Spring Boot API starter
+│  │  └─ springboot-multi-module   # Spring Boot multi-module structure
+│  │
+│  ├─ frontend          # Frontend project templates
+│  │  ├─ vue3-vite-admin           # Vue 3 + Vite admin template
+│  │  └─ uniapp                    # UniApp application template
+│  │
+│  └─ database          # Database related templates
+│     ├─ mysql                     # MySQL schema examples
+│     └─ migration                 # Migration scripts templates
+│
+├─ deploy               # Deployment scripts
+│  ├─ linux             # Native Linux deployment
+│  │  ├─ java-api                 # Java API deployment scripts
+│  │  └─ vue-admin                # Vue admin deployment scripts
+│  │
+│  └─ docker            # Docker deployment examples
+│     ├─ java                     # Dockerfile for Java apps
+│     └─ compose                  # Docker Compose templates
+│
+├─ devops               # DevOps infrastructure templates
+│  ├─ nginx             # Nginx reverse proxy configs
+│  │
+│  ├─ ci                # CI/CD pipelines
+│  │  ├─ github-actions           # GitHub Actions templates
+│  │  └─ jenkins                  # Jenkins pipeline templates
+│  │
+│  └─ monitoring        # Monitoring utilities
+│     ├─ healthcheck             # Service health check scripts
+│     └─ logrotate               # Log rotation configs
+│
+├─ snippets             # Reusable code snippets
+│  ├─ maven             # Maven build snippets
+│  ├─ spring            # Spring Boot configuration snippets
+│  ├─ bash              # Shell script snippets
+│  └─ vue               # Vue frontend snippets
+│
+└─ tools                # Helper tools for template usage
+   ├─ init-project.sh   # Initialize a project from templates
+   ├─ render-template.sh# Render template variables
+   └─ validate.sh       # Validate template structure
 
 ---
 
