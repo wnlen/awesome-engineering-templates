@@ -20,6 +20,10 @@ die() { echo "[$(date +'%F %T')] [deploy-web][error] $*" | tee -a "$LOG_FILE" >&
 
 mkdir -p "$DEPLOY_ROOT"
 
+for bin in flock readlink mv bash; do
+  command -v "$bin" >/dev/null 2>&1 || die "missing required tool: $bin"
+done
+
 # lock
 exec 9>"$LOCK_FILE"
 flock -n 9 || die "another deploy is running"
