@@ -22,7 +22,7 @@
             <deploy.remote.tmp>${deploy.root}/tmp/${app.name}-${app.profile}.jar</deploy.remote.tmp>
 
             <!-- 部署脚本 -->
-            <deploy.remote.script>/opt/deploy/deploy-${app.name}.sh</deploy.remote.script>
+            <deploy.remote.script>/opt/deploy/deploy-${app.name}-${app.profile}.sh</deploy.remote.script>
 
             <!-- 可选：部署后检查目录 -->
             <deploy.current.dir>${deploy.root}/current</deploy.current.dir>
