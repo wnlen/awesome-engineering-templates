@@ -1,88 +1,106 @@
-    <profiles>
-        <!-- ✅ PROD 环境 profile -->
-        <profile>
-            <id>prod</id>
+<profiles>
+    <profile>
+        <id>prod</id>
 
-            <properties>
-                <!-- 构建产物名 -->
-                <finalName>ydj-admin-api</finalName>
+        <properties>
+            <!-- 应用基础信息 -->
+            <app.name>xxx-admin-api</app.name>
+            <app.profile>prod</app.profile>
 
-                <!-- ===== 部署参数（按需改） ===== -->
-                <deploy.ssh.user>root</deploy.ssh.user>
-                <deploy.ssh.host>47.101.56.178</deploy.ssh.host>
+            <!-- Maven 构建产物名 -->
+            <project.build.finalName>${app.name}</project.build.finalName>
 
-                <!-- 推荐用 user.home，避免写死 C:\Users\PC -->
-                <deploy.ssh.key>${user.home}/.ssh/aliyun_id_rsa</deploy.ssh.key>
+            <!-- SSH 参数 -->
+            <deploy.ssh.user>root</deploy.ssh.user>
+            <deploy.ssh.host>47.101.xx.xxx</deploy.ssh.host>
+            <deploy.ssh.key>${user.home}\.ssh\id_rsa</deploy.ssh.key>
 
-                <!-- 上传目标 -->
-                <deploy.remote.tmp>/opt/ydj-admin-api/tmp/ydj-admin-api.jar</deploy.remote.tmp>
+            <!-- 部署目录 -->
+            <deploy.root>/opt/${app.name}</deploy.root>
 
-                <!-- 服务器上的部署脚本（任选其一，按你实际放置） -->
-                <deploy.remote.script>/opt/deploy/deploy-admin-api.sh</deploy.remote.script>
-                <!-- <deploy.remote.script>/opt/ydj-admin-api/scripts/deploy-prod.sh</deploy.remote.script> -->
-            </properties>
+            <!-- 上传目标：统一遵循 APP_NAME-PROFILE.jar -->
+            <deploy.remote.tmp>${deploy.root}/tmp/${app.name}-${app.profile}.jar</deploy.remote.tmp>
 
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <version>3.1.0</version>
-                        <executions>
-                            <execution>
-                                <id>deploy-to-prod</id>
-                                <phase>package</phase>
-                                <configuration>
-                                    <target>
-                                        <!-- 1) 上传 JAR -->
-                                        <echo>==> scp upload: target/${finalName}.jar -> ${deploy.ssh.user}@${deploy.ssh.host}:${deploy.remote.tmp}</echo>
-                                        <exec executable="scp" failonerror="true">
-                                            <arg value="-i"/>
-                                            <arg value="${deploy.ssh.key}"/>
-                                            <arg value="-o"/>
-                                            <arg value="StrictHostKeyChecking=no"/>
-                                            <arg value="target/${finalName}.jar"/>
-                                            <arg value="${deploy.ssh.user}@${deploy.ssh.host}:${deploy.remote.tmp}"/>
-                                        </exec>
+            <!-- 部署脚本 -->
+            <deploy.remote.script>/opt/deploy/deploy-${app.name}.sh</deploy.remote.script>
 
-                                        <!-- 2) 执行部署脚本（你的 releases/current/health-check 都在脚本里完成） -->
-                                        <echo>==> ssh deploy: ${deploy.remote.script}</echo>
-                                        <exec executable="ssh" failonerror="true">
-                                            <arg value="-i"/>
-                                            <arg value="${deploy.ssh.key}"/>
-                                            <arg value="-o"/>
-                                            <arg value="StrictHostKeyChecking=no"/>
-                                            <arg value="${deploy.ssh.user}@${deploy.ssh.host}"/>
-                                            <arg value="bash ${deploy.remote.script}"/>
-                                        </exec>
+            <!-- 可选：部署后检查目录 -->
+            <deploy.current.dir>${deploy.root}/current</deploy.current.dir>
+        </properties>
 
-                                        <!-- 3) 可选：打印当前版本/健康（按你服务器实际文件/URL改） -->
-                                        <echo>==> fetch version.txt (optional)</echo>
-                                        <exec executable="ssh">
-                                            <arg value="-i"/>
-                                            <arg value="${deploy.ssh.key}"/>
-                                            <arg value="-o"/>
-                                            <arg value="StrictHostKeyChecking=no"/>
-                                            <arg value="${deploy.ssh.user}@${deploy.ssh.host}"/>
-                                            <arg value="ls -l /opt/ydj-admin-api/current"/>
-                                        </exec>
-                                        <exec executable="ssh">
-                                            <arg value="-i"/>
-                                            <arg value="${deploy.ssh.key}"/>
-                                            <arg value="-o"/>
-                                            <arg value="StrictHostKeyChecking=no"/>
-                                            <arg value="${deploy.ssh.user}@${deploy.ssh.host}"/>
-                                            <arg value="cat /opt/ydj-admin-api/current/version.txt"/>
-                                        </exec>
-                                    </target>
-                                </configuration>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
+        <build>
+            <finalName>${app.name}</finalName>
+
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>3.1.0</version>
+                    <executions>
+                        <execution>
+                            <id>deploy-to-${app.profile}</id>
+                            <phase>package</phase>
+                            <configuration>
+                                <target>
+                                    <!-- 1) 上传 JAR -->
+                                    <echo>==> scp upload: target/${project.build.finalName}.jar -> ${deploy.ssh.user}@${deploy.ssh.host}:${deploy.remote.tmp}</echo>
+                                    <exec executable="scp" failonerror="true">
+                                        <arg value="-i"/>
+                                        <arg value="${deploy.ssh.key}"/>
+                                        <arg value="-o"/>
+                                        <arg value="BatchMode=yes"/>
+                                        <arg value="-o"/>
+                                        <arg value="StrictHostKeyChecking=no"/>
+                                        <arg value="target/${project.build.finalName}.jar"/>
+                                        <arg value="${deploy.ssh.user}@${deploy.ssh.host}:${deploy.remote.tmp}"/>
+                                    </exec>
+
+                                    <!-- 2) 执行部署脚本 -->
+                                    <echo>==> ssh deploy: ${deploy.remote.script}</echo>
+                                    <exec executable="ssh" failonerror="true">
+                                        <arg value="-i"/>
+                                        <arg value="${deploy.ssh.key}"/>
+                                        <arg value="-o"/>
+                                        <arg value="BatchMode=yes"/>
+                                        <arg value="-o"/>
+                                        <arg value="StrictHostKeyChecking=no"/>
+                                        <arg value="${deploy.ssh.user}@${deploy.ssh.host}"/>
+                                        <arg value="bash ${deploy.remote.script}"/>
+                                    </exec>
+
+                                    <!-- 3) 打印 current -->
+                                    <echo>==> fetch current release (optional)</echo>
+                                    <exec executable="ssh">
+                                        <arg value="-i"/>
+                                        <arg value="${deploy.ssh.key}"/>
+                                        <arg value="-o"/>
+                                        <arg value="BatchMode=yes"/>
+                                        <arg value="-o"/>
+                                        <arg value="StrictHostKeyChecking=no"/>
+                                        <arg value="${deploy.ssh.user}@${deploy.ssh.host}"/>
+                                        <arg value="ls -l ${deploy.current.dir}"/>
+                                    </exec>
+
+                                    <!-- 4) 打印 version.txt -->
+                                    <exec executable="ssh">
+                                        <arg value="-i"/>
+                                        <arg value="${deploy.ssh.key}"/>
+                                        <arg value="-o"/>
+                                        <arg value="BatchMode=yes"/>
+                                        <arg value="-o"/>
+                                        <arg value="StrictHostKeyChecking=no"/>
+                                        <arg value="${deploy.ssh.user}@${deploy.ssh.host}"/>
+                                        <arg value="cat ${deploy.current.dir}/version.txt"/>
+                                    </exec>
+                                </target>
+                            </configuration>
+                            <goals>
+                                <goal>run</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </build>
+    </profile>
+</profiles>
